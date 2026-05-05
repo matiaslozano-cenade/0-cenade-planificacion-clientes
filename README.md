@@ -29,10 +29,16 @@ En pantallas <900 px la sidebar se oculta automáticamente.
 
 ```sql
 clients (id, name, sub, created_at)
-events  (id, client_id → clients, type, start_date, end_date, description, created_at)
+events  (id, client_id → clients, type,
+         start_date, end_date,
+         start_time, end_time,
+         recurrence_group_id,
+         description, created_at)
 ```
 
 `events.type` está restringido a: `meeting`, `delivery`, `deadline`, `milestone`, `review`.
+
+`recurrence_group_id` (uuid, nullable) agrupa eventos creados a partir de una misma regla de repetición — los eventos individuales se generan al guardar y comparten ese id, lo que permite eliminar toda la serie con un solo `DELETE`.
 
 RLS habilitado en ambas tablas con políticas públicas (read / insert / update / delete con `using (true)`). Cualquier usuario con la URL puede leer y escribir — apropiado para uso interno sin login. Si más adelante hay datos sensibles, restringir las policies a `auth.role() = 'authenticated'` y agregar Supabase Auth.
 
@@ -77,8 +83,9 @@ vercel --prod
 - Modal "Nuevo cliente" / "Editar cliente" (nombre + rubro)
 - Doble-click sobre fila de cliente para editar
 - Eliminar cliente con botón × en hover (borra eventos en cascada)
-- Modal "Nuevo evento" que persiste en Supabase
-- Click derecho sobre evento (barra o punto) para eliminarlo
+- Modal "Nuevo evento" con hora opcional (inicio / fin) y recurrencia (diaria, semanal, quincenal, mensual) hasta una fecha tope
+- Generación automática de hasta 200 ocurrencias por serie con `recurrence_group_id` compartido
+- Click derecho sobre evento (barra o punto) para eliminarlo; si pertenece a una serie, ofrece eliminar solo este o toda la serie
 - Avatar con iniciales y color por cliente (hash determinístico)
 - Encabezados de día y columna de cliente sticky
 - Empty state cuando no hay clientes
