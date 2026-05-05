@@ -4,9 +4,17 @@ Panel de carta Gantt mensual para visualizar y crear eventos por cliente (reunio
 
 ## Stack
 
-- **Frontend**: HTML + JS vanilla, sin build step. Tipografías DM Sans / DM Mono.
+- **Frontend**: HTML + JS vanilla, sin build step. Tipografías Inter / JetBrains Mono.
 - **Backend**: Supabase (Postgres + RLS público) — proyecto `matiaslozano-cenade's Project carta gunt` (`wjbwccacjdkuejcriode`).
 - **Hosting**: Vercel — team `matiaslozano-cenade's projects`.
+
+## Layout
+
+- **Topbar** con marca, status pill (estado de conexión a Supabase) y acciones primarias.
+- **Sidebar izquierda** (≥900 px) con stats del mes y filtros por tipo.
+- **Main** con toolbar (mes, hoy, contador) y la grilla Gantt con encabezados sticky de día y de cliente.
+
+En pantallas <900 px la sidebar se oculta automáticamente.
 
 ## Estructura
 
@@ -63,12 +71,24 @@ vercel --prod
 ## Funciones
 
 - Vista Gantt mensual con navegación mes a mes
-- Filtros por tipo de evento (chips activables)
-- Stats del mes en curso (totales por tipo)
+- Filtros por tipo de evento desde la sidebar
+- Stats del mes en sidebar (cards con conteo por tipo + total destacado)
 - Eventos single-day (puntos) y multi-día (barras)
-- Modal "Nuevo cliente" para agregar clientes (nombre + rubro)
-- Doble-click sobre un cliente para editarlo (nombre / rubro)
-- Eliminar cliente (botón × al hacer hover sobre la fila; borra eventos asociados en cascada)
+- Modal "Nuevo cliente" / "Editar cliente" (nombre + rubro)
+- Doble-click sobre fila de cliente para editar
+- Eliminar cliente con botón × en hover (borra eventos en cascada)
 - Modal "Nuevo evento" que persiste en Supabase
-- Click derecho sobre un evento (barra o punto) para eliminarlo, con confirmación
+- Click derecho sobre evento (barra o punto) para eliminarlo
+- Avatar con iniciales y color por cliente (hash determinístico)
+- Encabezados de día y columna de cliente sticky
+- Empty state cuando no hay clientes
 - Exportar todo el dataset a CSV
+
+## Atajos de teclado
+
+| Tecla | Acción |
+|---|---|
+| `T` | Saltar al mes actual |
+| `N` | Crear evento |
+| `⌘/Ctrl + ←` / `→` | Mes anterior / siguiente |
+| `Esc` | Cerrar modal |
