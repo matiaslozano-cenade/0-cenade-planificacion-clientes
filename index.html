@@ -758,7 +758,7 @@
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <div class="modal-head">
-      <h2>Nuevo evento</h2>
+      <h2 id="eTitle">Nuevo evento</h2>
       <span class="modal-tag">Evento</span>
     </div>
     <div class="modal-body">
@@ -842,6 +842,7 @@ let CLIENTS = [];
 let events = [];
 let activeFilters = new Set(TYPES);
 let editingClientId = null;
+let editingEventId  = null;
 
 const today = new Date(); today.setHours(0,0,0,0);
 let currentYear = today.getFullYear();
@@ -1022,7 +1023,7 @@ function render(){
             bar.style.cssText = `background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.color}55;width:calc(${span}*var(--day-w) - 8px);`;
             bar.textContent = ev.desc;
             attachTooltip(bar, ev, client.name);
-            attachEventDelete(bar, ev, client.name);
+            attachEventActions(bar, ev, client.name);
             cell.appendChild(bar);
           }
         } else {
@@ -1031,7 +1032,7 @@ function render(){
             dot.className = 'ev-dot';
             dot.style.background = cfg.color;
             attachTooltip(dot, ev, client.name);
-            attachEventDelete(dot, ev, client.name);
+            attachEventActions(dot, ev, client.name);
             cell.appendChild(dot);
           }
         }
@@ -1073,7 +1074,7 @@ function attachTooltip(el, ev, clientName){
       ${timeStr ? `<div class="tt-time">🕐 ${timeStr}</div>` : ''}
       <div class="tt-client"></div>
       ${recurringTag}
-      <div class="tt-hint">Click derecho para eliminar</div>`;
+      <div class="tt-hint">Doble-click: editar · Click derecho: eliminar</div>`;
     tip.querySelector('.tt-desc').textContent = ev.desc;
     tip.querySelector('.tt-client').textContent = clientName;
     tip.style.display='block';
@@ -1083,7 +1084,13 @@ function attachTooltip(el, ev, clientName){
   el.addEventListener('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; });
 }
 
-function attachEventDelete(el, ev, clientName){
+function attachEventActions(el, ev, clientName){
+  el.addEventListener('dblclick', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('tooltip').style.display='none';
+    openModal(ev);
+  });
   el.addEventListener('contextmenu', async e => {
     e.preventDefault();
     document.getElementById('tooltip').style.display='none';
@@ -1183,23 +1190,49 @@ function goToday(){
   },50);
 }
 
-function openModal(){
+function openModal(ev){
   if(!CLIENTS.length){
     if(confirm('Aún no hay clientes. ¿Crear uno ahora?')) openClientModal();
     return;
   }
-  const y=currentYear, m=String(currentMonth+1).padStart(2,'0');
-  document.getElementById('mStart').value=`${y}-${m}-01`;
-  document.getElementById('mEnd').value='';
-  document.getElementById('mStartTime').value='';
-  document.getElementById('mEndTime').value='';
-  document.getElementById('mRecurrence').value='none';
-  document.getElementById('mUntil').value='';
-  document.getElementById('mUntilGroup').style.display='none';
-  document.getElementById('mDesc').value='';
+  editingEventId = ev ? ev.id : null;
+  const isEdit = !!ev;
+
+  document.getElementById('eTitle').textContent     = isEdit ? 'Editar evento' : 'Nuevo evento';
+  document.getElementById('saveBtn').textContent    = isEdit ? 'Guardar cambios' : 'Crear evento';
+
+  // Hide recurrence section in edit mode (no aplica modificar serie desde aquí)
+  const recGroup   = document.getElementById('mRecurrence').closest('.form-group');
+  const untilGroup = document.getElementById('mUntilGroup');
+  recGroup.style.display = isEdit ? 'none' : '';
+  untilGroup.style.display = 'none';
+
+  if(isEdit){
+    document.getElementById('mClient').value     = ev.client;
+    document.getElementById('mType').value       = ev.type;
+    document.getElementById('mStart').value      = ev.start;
+    document.getElementById('mEnd').value        = ev.end || '';
+    document.getElementById('mStartTime').value  = ev.startTime ? ev.startTime.slice(0,5) : '';
+    document.getElementById('mEndTime').value    = ev.endTime   ? ev.endTime.slice(0,5)   : '';
+    document.getElementById('mRecurrence').value = 'none';
+    document.getElementById('mUntil').value      = '';
+    document.getElementById('mDesc').value       = ev.desc || '';
+  } else {
+    const y=currentYear, m=String(currentMonth+1).padStart(2,'0');
+    document.getElementById('mStart').value      = `${y}-${m}-01`;
+    document.getElementById('mEnd').value        = '';
+    document.getElementById('mStartTime').value  = '';
+    document.getElementById('mEndTime').value    = '';
+    document.getElementById('mRecurrence').value = 'none';
+    document.getElementById('mUntil').value      = '';
+    document.getElementById('mDesc').value       = '';
+  }
   document.getElementById('modalBg').classList.add('open');
 }
-function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('open');
+  editingEventId = null;
+}
 
 document.getElementById('modalBg').addEventListener('click',function(e){
   if(e.target===this) closeModal();
@@ -1305,31 +1338,43 @@ async function saveEvent(){
     return;
   }
 
-  btn.disabled = true; btn.textContent = 'Guardando…';
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Guardando…';
 
-  let rows;
-  if(recurrence === 'none'){
-    rows = [{
+  if(editingEventId){
+    const { error } = await sb.from('events').update({
       client_id, type,
       start_date: start, end_date: end,
       start_time: startTime, end_time: endTime,
       description: desc,
-    }];
+    }).eq('id', editingEventId);
+    btn.disabled = false; btn.textContent = originalLabel;
+    if(error){ alert('Error: ' + error.message); return; }
   } else {
-    const groupId = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
-    const occs = generateOccurrences(start, end, recurrence, until);
-    rows = occs.map(o => ({
-      client_id, type,
-      start_date: o.start, end_date: o.end,
-      start_time: startTime, end_time: endTime,
-      description: desc,
-      recurrence_group_id: groupId,
-    }));
+    let rows;
+    if(recurrence === 'none'){
+      rows = [{
+        client_id, type,
+        start_date: start, end_date: end,
+        start_time: startTime, end_time: endTime,
+        description: desc,
+      }];
+    } else {
+      const groupId = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
+      const occs = generateOccurrences(start, end, recurrence, until);
+      rows = occs.map(o => ({
+        client_id, type,
+        start_date: o.start, end_date: o.end,
+        start_time: startTime, end_time: endTime,
+        description: desc,
+        recurrence_group_id: groupId,
+      }));
+    }
+    const { error } = await sb.from('events').insert(rows);
+    btn.disabled = false; btn.textContent = originalLabel;
+    if(error){ alert('Error: ' + error.message); return; }
   }
-
-  const { error } = await sb.from('events').insert(rows);
-  btn.disabled = false; btn.textContent = 'Crear evento';
-  if(error){ alert('Error: ' + error.message); return; }
   closeModal();
   await loadData();
 }

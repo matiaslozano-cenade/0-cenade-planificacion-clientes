@@ -85,6 +85,7 @@ vercel --prod
 - Eliminar cliente con botón × en hover (borra eventos en cascada)
 - Modal "Nuevo evento" con hora opcional (inicio / fin) y recurrencia (diaria, semanal, quincenal, mensual) hasta una fecha tope
 - Generación automática de hasta 200 ocurrencias por serie con `recurrence_group_id` compartido
+- Doble-click sobre un evento para editarlo (cliente, tipo, fechas, horas, descripción)
 - Click derecho sobre evento (barra o punto) para eliminarlo; si pertenece a una serie, ofrece eliminar solo este o toda la serie
 - Avatar con iniciales y color por cliente (hash determinístico)
 - Encabezados de día y columna de cliente sticky
