@@ -375,6 +375,7 @@
   <div class="header-right">
     <span id="statusPill" class="status-pill">Conectando…</span>
     <button class="btn" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn" onclick="openClientModal()">+ Nuevo cliente</button>
     <button class="btn btn-primary" onclick="openModal()">+ Nuevo evento</button>
   </div>
 </header>
@@ -413,6 +414,24 @@
 </div>
 
 <div id="tooltip"></div>
+
+<div class="modal-bg" id="clientModalBg">
+  <div class="modal">
+    <h2>Nuevo cliente</h2>
+    <div class="form-group">
+      <label>NOMBRE</label>
+      <input type="text" id="cName" placeholder="Ej: Acme Corp"/>
+    </div>
+    <div class="form-group">
+      <label>RUBRO / DESCRIPCIÓN (opcional)</label>
+      <input type="text" id="cSub" placeholder="Ej: E-commerce"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeClientModal()">Cancelar</button>
+      <button class="btn btn-primary" id="saveClientBtn" onclick="saveClient()">Guardar cliente</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-bg" id="modalBg">
   <div class="modal">
@@ -672,6 +691,32 @@ function closeModal(){ document.getElementById('modalBg').classList.remove('open
 document.getElementById('modalBg').addEventListener('click',function(e){
   if(e.target===this) closeModal();
 });
+
+function openClientModal(){
+  document.getElementById('cName').value = '';
+  document.getElementById('cSub').value  = '';
+  document.getElementById('clientModalBg').classList.add('open');
+  setTimeout(() => document.getElementById('cName').focus(), 50);
+}
+function closeClientModal(){ document.getElementById('clientModalBg').classList.remove('open'); }
+
+document.getElementById('clientModalBg').addEventListener('click', function(e){
+  if(e.target===this) closeClientModal();
+});
+
+async function saveClient(){
+  const btn  = document.getElementById('saveClientBtn');
+  const name = document.getElementById('cName').value.trim();
+  const sub  = document.getElementById('cSub').value.trim() || null;
+  if(!name){ alert('El nombre es obligatorio'); return; }
+
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const { error } = await sb.from('clients').insert({ name, sub });
+  btn.disabled = false; btn.textContent = 'Guardar cliente';
+  if(error){ alert('Error: ' + error.message); return; }
+  closeClientModal();
+  await loadData();
+}
 
 async function deleteClient(id, name){
   const evCount = events.filter(e => e.client === id).length;
