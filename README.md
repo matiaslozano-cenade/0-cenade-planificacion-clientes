@@ -32,13 +32,15 @@ En pantallas <900 px la sidebar se oculta automáticamente.
 
 ## Esquema de base de datos
 
+Las tablas usan el prefijo organizacional `0-cenade-planificacion-`:
+
 ```sql
-clients (id, name, sub, created_at)
-events  (id, client_id → clients, type,
-         start_date, end_date,
-         start_time, end_time,
-         recurrence_group_id,
-         description, created_at)
+"0-cenade-planificacion-clientes" (id, name, sub, created_at)
+"0-cenade-planificacion-eventos"  (id, client_id → clientes, type,
+                                   start_date, end_date,
+                                   start_time, end_time,
+                                   recurrence_group_id,
+                                   description, created_at)
 ```
 
 `events.type` está restringido a: `meeting`, `delivery`, `deadline`, `milestone`, `review`.

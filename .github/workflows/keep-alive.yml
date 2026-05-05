@@ -18,7 +18,7 @@ jobs:
           set -euo pipefail
 
           echo "→ Insert keepalive client"
-          RESPONSE=$(curl -fsSL -X POST "$URL/rest/v1/clients" \
+          RESPONSE=$(curl -fsSL -X POST "$URL/rest/v1/0-cenade-planificacion-clientes" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY" \
             -H "Content-Type: application/json" \
@@ -34,12 +34,12 @@ jobs:
           echo "→ Insertado id=$ID"
 
           echo "→ Delete keepalive client"
-          curl -fsSL -X DELETE "$URL/rest/v1/clients?id=eq.$ID" \
+          curl -fsSL -X DELETE "$URL/rest/v1/0-cenade-planificacion-clientes?id=eq.$ID" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY"
 
           echo "→ Cleanup: borrar cualquier '.' residual de runs anteriores fallidos"
-          curl -fsSL -X DELETE "$URL/rest/v1/clients?name=eq.%2E&sub=eq.keepalive" \
+          curl -fsSL -X DELETE "$URL/rest/v1/0-cenade-planificacion-clientes?name=eq.%2E&sub=eq.keepalive" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY"
 

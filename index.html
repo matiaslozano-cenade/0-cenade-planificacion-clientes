@@ -1135,8 +1135,8 @@ function setStatus(text, kind){
 async function loadData(){
   setStatus('Cargando…');
   const [{ data: clientsData, error: cErr }, { data: eventsData, error: eErr }] = await Promise.all([
-    sb.from('clients').select('*').order('id'),
-    sb.from('events').select('*').order('start_date'),
+    sb.from('0-cenade-planificacion-clientes').select('*').order('id'),
+    sb.from('0-cenade-planificacion-eventos').select('*').order('start_date'),
   ]);
   if(cErr || eErr){
     setStatus('Error de conexión', 'err');
@@ -1372,14 +1372,14 @@ function attachEventActions(el, ev, clientName){
       );
       setStatus('Eliminando…');
       const q = all
-        ? sb.from('events').delete().eq('recurrence_group_id', ev.recurrenceId)
-        : sb.from('events').delete().eq('id', ev.id);
+        ? sb.from('0-cenade-planificacion-eventos').delete().eq('recurrence_group_id', ev.recurrenceId)
+        : sb.from('0-cenade-planificacion-eventos').delete().eq('id', ev.id);
       const { error } = await q;
       if(error){ setStatus('Error: ' + error.message, 'err'); return; }
     } else {
       if(!confirm(`¿Eliminar evento "${ev.desc}"?\nCliente: ${clientName}`)) return;
       setStatus('Eliminando…');
-      const { error } = await sb.from('events').delete().eq('id', ev.id);
+      const { error } = await sb.from('0-cenade-planificacion-eventos').delete().eq('id', ev.id);
       if(error){ setStatus('Error: ' + error.message, 'err'); return; }
     }
     await loadData();
@@ -1538,8 +1538,8 @@ async function saveClient(){
   const original = btn.textContent;
   btn.textContent = 'Guardando…';
   const q = editingClientId
-    ? sb.from('clients').update({ name, sub }).eq('id', editingClientId)
-    : sb.from('clients').insert({ name, sub });
+    ? sb.from('0-cenade-planificacion-clientes').update({ name, sub }).eq('id', editingClientId)
+    : sb.from('0-cenade-planificacion-clientes').insert({ name, sub });
   const { error } = await q;
   btn.disabled = false; btn.textContent = original;
   if(error){ alert('Error: ' + error.message); return; }
@@ -1554,7 +1554,7 @@ async function deleteClient(id, name){
     : `¿Eliminar el cliente "${name}"?`;
   if(!confirm(msg)) return;
   setStatus('Eliminando…');
-  const { error } = await sb.from('clients').delete().eq('id', id);
+  const { error } = await sb.from('0-cenade-planificacion-clientes').delete().eq('id', id);
   if(error){ setStatus('Error: ' + error.message, 'err'); return; }
   await loadData();
 }
@@ -1611,7 +1611,7 @@ async function saveEvent(){
   btn.textContent = 'Guardando…';
 
   if(editingEventId){
-    const { error } = await sb.from('events').update({
+    const { error } = await sb.from('0-cenade-planificacion-eventos').update({
       client_id, type,
       start_date: start, end_date: end,
       start_time: startTime, end_time: endTime,
@@ -1639,7 +1639,7 @@ async function saveEvent(){
         recurrence_group_id: groupId,
       }));
     }
-    const { error } = await sb.from('events').insert(rows);
+    const { error } = await sb.from('0-cenade-planificacion-eventos').insert(rows);
     btn.disabled = false; btn.textContent = originalLabel;
     if(error){ alert('Error: ' + error.message); return; }
   }
