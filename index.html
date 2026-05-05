@@ -295,6 +295,7 @@
   .tt-desc { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
   .tt-date { font-size: 11px; color: var(--text-mute); font-family: var(--mono); }
   .tt-client { font-size: 11px; color: var(--text-mute); margin-top: 3px; }
+  .tt-hint { font-size: 10px; color: var(--text-dim); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border); font-style: italic; }
 
   .modal-bg {
     display: none; position: fixed; inset: 0;
@@ -417,7 +418,7 @@
 
 <div class="modal-bg" id="clientModalBg">
   <div class="modal">
-    <h2>Nuevo cliente</h2>
+    <h2 id="cTitle">Nuevo cliente</h2>
     <div class="form-group">
       <label>NOMBRE</label>
       <input type="text" id="cName" placeholder="Ej: Acme Corp"/>
@@ -551,13 +552,16 @@ function render(){
   CLIENTS.forEach(client => {
     const labelEl = document.createElement('div');
     labelEl.className = 'client-label';
+    labelEl.title = 'Doble-click para editar';
     labelEl.innerHTML = `
       <div class="client-name"></div>
       <div class="client-sub"></div>
       <button class="client-del" title="Eliminar cliente">×</button>`;
     labelEl.querySelector('.client-name').textContent = client.name;
     labelEl.querySelector('.client-sub').textContent  = client.sub || '';
-    labelEl.querySelector('.client-del').addEventListener('click', () => deleteClient(client.id, client.name));
+    const delBtn = labelEl.querySelector('.client-del');
+    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteClient(client.id, client.name); });
+    labelEl.addEventListener('dblclick', () => openClientModal(client));
     grid.appendChild(labelEl);
 
     const clientEvs = events.filter(e=>e.client===client.id && activeFilters.has(e.type));
@@ -589,6 +593,7 @@ function render(){
             bar.textContent = ev.desc;
             bar.title = ev.desc;
             attachTooltip(bar, ev, client.name);
+            attachEventDelete(bar, ev, client.name);
             cell.appendChild(bar);
           }
         } else {
@@ -597,6 +602,7 @@ function render(){
             dot.className = 'ev-dot';
             dot.style.cssText = `background:${cfg.color};border-color:var(--bg);`;
             attachTooltip(dot, ev, client.name);
+            attachEventDelete(dot, ev, client.name);
             cell.appendChild(dot);
           }
         }
@@ -618,12 +624,25 @@ function attachTooltip(el, ev, clientName){
       <div class="tt-type" style="color:${cfg.color}">${cfg.label}</div>
       <div class="tt-desc">${ev.desc}</div>
       <div class="tt-date">${dateStr}</div>
-      <div class="tt-client">${clientName}</div>`;
+      <div class="tt-client">${clientName}</div>
+      <div class="tt-hint">Click derecho para eliminar</div>`;
     tip.style.display='block';
     moveTip(e);
   });
   el.addEventListener('mousemove', moveTip);
   el.addEventListener('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; });
+}
+
+function attachEventDelete(el, ev, clientName){
+  el.addEventListener('contextmenu', async e => {
+    e.preventDefault();
+    document.getElementById('tooltip').style.display='none';
+    if(!confirm(`¿Eliminar evento "${ev.desc}"?\nCliente: ${clientName}`)) return;
+    setStatus('Eliminando…');
+    const { error } = await sb.from('events').delete().eq('id', ev.id);
+    if(error){ setStatus('Error: ' + error.message, 'err'); return; }
+    await loadData();
+  });
 }
 
 function moveTip(e){
@@ -692,13 +711,21 @@ document.getElementById('modalBg').addEventListener('click',function(e){
   if(e.target===this) closeModal();
 });
 
-function openClientModal(){
-  document.getElementById('cName').value = '';
-  document.getElementById('cSub').value  = '';
+let editingClientId = null;
+
+function openClientModal(client){
+  editingClientId = client ? client.id : null;
+  document.getElementById('cTitle').textContent      = client ? 'Editar cliente' : 'Nuevo cliente';
+  document.getElementById('saveClientBtn').textContent = client ? 'Guardar cambios' : 'Guardar cliente';
+  document.getElementById('cName').value = client ? client.name : '';
+  document.getElementById('cSub').value  = client ? (client.sub || '') : '';
   document.getElementById('clientModalBg').classList.add('open');
   setTimeout(() => document.getElementById('cName').focus(), 50);
 }
-function closeClientModal(){ document.getElementById('clientModalBg').classList.remove('open'); }
+function closeClientModal(){
+  document.getElementById('clientModalBg').classList.remove('open');
+  editingClientId = null;
+}
 
 document.getElementById('clientModalBg').addEventListener('click', function(e){
   if(e.target===this) closeClientModal();
@@ -710,9 +737,14 @@ async function saveClient(){
   const sub  = document.getElementById('cSub').value.trim() || null;
   if(!name){ alert('El nombre es obligatorio'); return; }
 
-  btn.disabled = true; btn.textContent = 'Guardando…';
-  const { error } = await sb.from('clients').insert({ name, sub });
-  btn.disabled = false; btn.textContent = 'Guardar cliente';
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Guardando…';
+  const q = editingClientId
+    ? sb.from('clients').update({ name, sub }).eq('id', editingClientId)
+    : sb.from('clients').insert({ name, sub });
+  const { error } = await q;
+  btn.disabled = false; btn.textContent = original;
   if(error){ alert('Error: ' + error.message); return; }
   closeClientModal();
   await loadData();

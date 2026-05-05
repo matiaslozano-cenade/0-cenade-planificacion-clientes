@@ -67,6 +67,8 @@ vercel --prod
 - Stats del mes en curso (totales por tipo)
 - Eventos single-day (puntos) y multi-día (barras)
 - Modal "Nuevo cliente" para agregar clientes (nombre + rubro)
-- Modal "Nuevo evento" que persiste en Supabase
+- Doble-click sobre un cliente para editarlo (nombre / rubro)
 - Eliminar cliente (botón × al hacer hover sobre la fila; borra eventos asociados en cascada)
+- Modal "Nuevo evento" que persiste en Supabase
+- Click derecho sobre un evento (barra o punto) para eliminarlo, con confirmación
 - Exportar todo el dataset a CSV
