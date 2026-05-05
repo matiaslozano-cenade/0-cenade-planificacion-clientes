@@ -1,12 +1,17 @@
-# Panel de Planificación — Clientes
+# CENADE · Panel de Planificación
 
-Panel de carta Gantt mensual para visualizar y crear eventos por cliente (reuniones, entregas, plazos, hitos críticos y revisiones). Datos persistidos en Supabase, deploy estático en Vercel.
+Panel de carta Gantt mensual para visualizar y crear eventos por cliente (reuniones, entregas, plazos, hitos críticos y revisiones). Datos persistidos en Supabase, deploy estático en Vercel. Branding y paleta cromática alineados al logo corporativo de CENADE (navy `#1e3a8a` y rojo `#c8332d`).
 
 ## Stack
 
-- **Frontend**: HTML + JS vanilla, sin build step. Tipografías Inter / JetBrains Mono.
+- **Frontend**: HTML + JS vanilla, sin build step. Tipografías Inter / JetBrains Mono. Tema claro corporativo.
 - **Backend**: Supabase (Postgres + RLS público) — proyecto `matiaslozano-cenade's Project carta gunt` (`wjbwccacjdkuejcriode`).
 - **Hosting**: Vercel — team `matiaslozano-cenade's projects`.
+
+## Identidad visual
+
+- **Logo**: `logo.jpeg` en raíz del repo (CENADE — barras navy/rojas con flecha al alza). Se muestra en el topbar junto al nombre del producto.
+- **Colores tipo de evento**: Reunión = navy CENADE · Entrega = emerald · Plazo = ámbar · Hito = rojo CENADE · Revisión = índigo.
 
 ## Layout
 
