@@ -580,6 +580,108 @@
     font-family: var(--font-mono);
   }
 
+  /* ── Day detail list ── */
+  .day-modal { width: 540px; }
+  .day-list {
+    display: flex; flex-direction: column;
+    gap: 8px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin: -4px -4px 0;
+  }
+  .day-list-empty {
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+  .day-list-empty svg { opacity: 0.3; margin-bottom: 8px; }
+  .day-section-head {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 12px 4px 4px;
+  }
+  .day-section-head:first-child { margin-top: 4px; }
+  .day-ev-item {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-ev-item:hover {
+    border-color: var(--border-default);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .day-ev-time {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding-top: 2px;
+    line-height: 1.3;
+  }
+  .day-ev-time-all {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .day-ev-body {
+    display: flex; flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+  .day-ev-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    align-self: flex-start;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .day-ev-pill::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .day-ev-desc {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .day-ev-client {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .day-ev-client::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: var(--client-color, var(--accent));
+    flex-shrink: 0;
+  }
+
+  .gh-day { cursor: pointer; user-select: none; transition: background 0.12s; border-radius: var(--radius-xs); }
+  .gh-day:hover { background: var(--bg-elevated-2); }
+
   /* ── Modal ── */
   .modal-bg {
     display: none; position: fixed; inset: 0;
@@ -731,6 +833,22 @@
 </main>
 
 <div id="tooltip"></div>
+
+<div class="modal-bg" id="dayDetailBg">
+  <div class="modal day-modal">
+    <div class="modal-head">
+      <h2 id="dayTitle">Detalle del día</h2>
+      <span class="modal-tag">Día</span>
+    </div>
+    <div class="modal-body">
+      <div class="day-list" id="dayEvList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDayDetail()">Cerrar</button>
+      <button class="btn btn-primary" id="dayAddBtn">+ Nuevo evento</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-bg" id="clientModalBg">
   <div class="modal">
@@ -941,6 +1059,8 @@ function render(){
     const el = document.createElement('div');
     el.className = 'gh-cell gh-day' + (isToday?' today':'') + (isWk?' weekend':'');
     el.innerHTML = `<span class="day-num">${d}</span><span class="day-wd">${WEEKDAYS[dt.getDay()]}</span>`;
+    el.title = 'Doble-click para ver detalle del día';
+    el.addEventListener('dblclick', () => openDayDetail(currentYear, currentMonth, d));
     grid.appendChild(el);
   }
 
@@ -1001,6 +1121,10 @@ function render(){
 
       cell.addEventListener('mouseenter', () => labelEl.classList.add('row-hover'));
       cell.addEventListener('mouseleave', () => labelEl.classList.remove('row-hover'));
+      cell.addEventListener('dblclick', e => {
+        if(e.target !== cell) return; // ignore dblclicks bubbling from event bars/dots
+        openDayDetail(currentYear, currentMonth, d);
+      });
       rowCells.push(cell);
 
       if(isToday){
@@ -1190,7 +1314,7 @@ function goToday(){
   },50);
 }
 
-function openModal(ev){
+function openModal(ev, defaultStart){
   if(!CLIENTS.length){
     if(confirm('Aún no hay clientes. ¿Crear uno ahora?')) openClientModal();
     return;
@@ -1219,7 +1343,7 @@ function openModal(ev){
     document.getElementById('mDesc').value       = ev.desc || '';
   } else {
     const y=currentYear, m=String(currentMonth+1).padStart(2,'0');
-    document.getElementById('mStart').value      = `${y}-${m}-01`;
+    document.getElementById('mStart').value      = defaultStart || `${y}-${m}-01`;
     document.getElementById('mEnd').value        = '';
     document.getElementById('mStartTime').value  = '';
     document.getElementById('mEndTime').value    = '';
@@ -1401,6 +1525,100 @@ function exportCSV(){
   a.click();
 }
 
+// ── Day detail ──
+let currentDayIso = null;
+
+function openDayDetail(year, month, day){
+  const dt = new Date(year, month, day);
+  const iso = fmtIsoDate(dt);
+  currentDayIso = iso;
+
+  const fmt = dt.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('dayTitle').textContent = fmt.charAt(0).toUpperCase() + fmt.slice(1);
+
+  const dayEvs = events.filter(ev => {
+    const s = parseDate(ev.start);
+    const e = ev.end ? parseDate(ev.end) : s;
+    return dt >= s && dt <= e;
+  });
+
+  const allDay  = dayEvs.filter(e => !e.startTime);
+  const timed   = dayEvs.filter(e =>  e.startTime).sort((a,b) => a.startTime.localeCompare(b.startTime));
+
+  const listEl = document.getElementById('dayEvList');
+  listEl.innerHTML = '';
+
+  if(dayEvs.length === 0){
+    listEl.innerHTML = `
+      <div class="day-list-empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+        <div>Sin eventos este día</div>
+      </div>`;
+  } else {
+    if(allDay.length){
+      const head = document.createElement('div');
+      head.className = 'day-section-head';
+      head.textContent = `Todo el día · ${allDay.length}`;
+      listEl.appendChild(head);
+      allDay.forEach(ev => listEl.appendChild(buildDayEvItem(ev, true)));
+    }
+    if(timed.length){
+      const head = document.createElement('div');
+      head.className = 'day-section-head';
+      head.textContent = `Programados · ${timed.length}`;
+      listEl.appendChild(head);
+      timed.forEach(ev => listEl.appendChild(buildDayEvItem(ev, false)));
+    }
+  }
+
+  document.getElementById('dayDetailBg').classList.add('open');
+}
+
+function buildDayEvItem(ev, isAllDay){
+  const client = CLIENTS.find(c => c.id === ev.client);
+  const cfg = TYPE_CFG[ev.type];
+  const item = document.createElement('div');
+  item.className = 'day-ev-item';
+
+  const timeHtml = isAllDay
+    ? `<span class="day-ev-time-all">Todo el día</span>`
+    : (ev.endTime
+        ? `${ev.startTime.slice(0,5)}<br>→ ${ev.endTime.slice(0,5)}`
+        : ev.startTime.slice(0,5));
+
+  item.innerHTML = `
+    <div class="day-ev-time">${timeHtml}</div>
+    <div class="day-ev-body">
+      <span class="day-ev-pill" style="background:${cfg.bg};color:${cfg.color}">${cfg.short}</span>
+      <div class="day-ev-desc"></div>
+      <div class="day-ev-client" style="--client-color:${client ? clientColor(client.name) : 'var(--accent)'}"></div>
+    </div>`;
+  item.querySelector('.day-ev-desc').textContent = ev.desc;
+  item.querySelector('.day-ev-client').textContent = client ? client.name : '—';
+  item.title = 'Click para editar';
+  item.addEventListener('click', () => {
+    closeDayDetail();
+    openModal(ev);
+  });
+  return item;
+}
+
+function closeDayDetail(){
+  document.getElementById('dayDetailBg').classList.remove('open');
+}
+
+document.getElementById('dayDetailBg').addEventListener('click', function(e){
+  if(e.target===this) closeDayDetail();
+});
+
+document.getElementById('dayAddBtn').addEventListener('click', () => {
+  const iso = currentDayIso;
+  closeDayDetail();
+  openModal(null, iso);
+});
+
 function buildClientSelect(){
   const sel=document.getElementById('mClient');
   sel.innerHTML='';
@@ -1414,7 +1632,7 @@ function buildClientSelect(){
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if(e.target.matches('input, select, textarea')) return;
-  if(e.key === 'Escape'){ closeModal(); closeClientModal(); }
+  if(e.key === 'Escape'){ closeModal(); closeClientModal(); closeDayDetail(); }
   if(e.key === 'ArrowLeft'  && (e.metaKey||e.ctrlKey)){ e.preventDefault(); changeMonth(-1); }
   if(e.key === 'ArrowRight' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); changeMonth(1); }
   if(e.key === 't' || e.key === 'T') goToday();

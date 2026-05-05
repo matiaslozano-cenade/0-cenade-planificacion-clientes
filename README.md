@@ -96,6 +96,7 @@ vercel --prod
 - Modal "Nuevo evento" con hora opcional (inicio / fin) y recurrencia (diaria, semanal, quincenal, mensual) hasta una fecha tope
 - Generación automática de hasta 200 ocurrencias por serie con `recurrence_group_id` compartido
 - Doble-click sobre un evento para editarlo (cliente, tipo, fechas, horas, descripción)
+- Doble-click sobre el header de un día (o sobre una celda vacía) para abrir el detalle: lista de eventos del día separados en "Todo el día" y "Programados" (ordenados por hora). Click en cualquiera para editarlo, o "+ Nuevo evento" para crear uno con esa fecha pre-cargada
 - Click derecho sobre evento (barra o punto) para eliminarlo; si pertenece a una serie, ofrece eliminar solo este o toda la serie
 - Avatar con iniciales y color por cliente (hash determinístico)
 - Encabezados de día y columna de cliente sticky
