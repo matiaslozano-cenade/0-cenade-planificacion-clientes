@@ -1,0 +1,46 @@
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # Días 1, 6, 11, 16, 21, 26, 31 del mes a las 12:00 UTC (gap máximo 5 días).
+    - cron: "0 12 */5 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insertar y borrar un cliente "." para mantener Supabase activo
+        env:
+          URL: https://wjbwccacjdkuejcriode.supabase.co
+          KEY: sb_publishable_pcI9qqrsLJuPw1fO4v3qQw_CL7VKxnt
+        run: |
+          set -euo pipefail
+
+          echo "→ Insert keepalive client"
+          RESPONSE=$(curl -fsSL -X POST "$URL/rest/v1/clients" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d '{"name":".","sub":"keepalive"}')
+
+          ID=$(echo "$RESPONSE" | jq -r '.[0].id')
+          if [ -z "$ID" ] || [ "$ID" = "null" ]; then
+            echo "Error: no se pudo leer el id insertado"
+            echo "Respuesta: $RESPONSE"
+            exit 1
+          fi
+          echo "→ Insertado id=$ID"
+
+          echo "→ Delete keepalive client"
+          curl -fsSL -X DELETE "$URL/rest/v1/clients?id=eq.$ID" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY"
+
+          echo "→ Cleanup: borrar cualquier '.' residual de runs anteriores fallidos"
+          curl -fsSL -X DELETE "$URL/rest/v1/clients?name=eq.%2E&sub=eq.keepalive" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY"
+
+          echo "✓ Keepalive completado"

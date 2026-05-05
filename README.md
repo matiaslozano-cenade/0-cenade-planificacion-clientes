@@ -63,6 +63,16 @@ npx serve
 
 Y abrir <http://localhost:8000>.
 
+## Keep-alive de Supabase
+
+GitHub Action en `.github/workflows/keep-alive.yml` se ejecuta a las 12:00 UTC los días 1, 6, 11, 16, 21, 26 y 31 de cada mes (gap máximo 5 días). Inserta un cliente con nombre `.` y `sub = keepalive` y lo elimina inmediatamente — basta para que Supabase no marque el proyecto como inactivo (free tier pausa a los 7 días).
+
+Trigger manual: pestaña Actions del repo → "Keep Supabase awake" → Run workflow. O por CLI:
+
+```bash
+gh workflow run "Keep Supabase awake"
+```
+
 ## Deploy
 
 Conectado a Vercel — cada push a `main` despliega producción automáticamente.
