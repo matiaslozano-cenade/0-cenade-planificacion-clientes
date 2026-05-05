@@ -193,15 +193,38 @@
   .gh-day .day-wd  { display: block; font-size: 9px; opacity: 0.6; margin-top: 1px; }
 
   .client-label {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0 14px 0 0;
+    padding: 0 32px 0 0;
     border-bottom: 1px solid var(--border);
     min-height: 52px;
   }
   .client-name { font-size: 13px; font-weight: 500; }
   .client-sub  { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+  .client-del {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-mute);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .client-label:hover .client-del { opacity: 1; }
+  .client-del:hover { background: rgba(232,93,117,0.15); color: var(--c-milestone); }
 
   .day-cell {
     position: relative;
@@ -509,7 +532,13 @@ function render(){
   CLIENTS.forEach(client => {
     const labelEl = document.createElement('div');
     labelEl.className = 'client-label';
-    labelEl.innerHTML = `<div class="client-name">${client.name}</div><div class="client-sub">${client.sub||''}</div>`;
+    labelEl.innerHTML = `
+      <div class="client-name"></div>
+      <div class="client-sub"></div>
+      <button class="client-del" title="Eliminar cliente">×</button>`;
+    labelEl.querySelector('.client-name').textContent = client.name;
+    labelEl.querySelector('.client-sub').textContent  = client.sub || '';
+    labelEl.querySelector('.client-del').addEventListener('click', () => deleteClient(client.id, client.name));
     grid.appendChild(labelEl);
 
     const clientEvs = events.filter(e=>e.client===client.id && activeFilters.has(e.type));
@@ -643,6 +672,18 @@ function closeModal(){ document.getElementById('modalBg').classList.remove('open
 document.getElementById('modalBg').addEventListener('click',function(e){
   if(e.target===this) closeModal();
 });
+
+async function deleteClient(id, name){
+  const evCount = events.filter(e => e.client === id).length;
+  const msg = evCount > 0
+    ? `¿Eliminar el cliente "${name}"?\nEsto también borrará ${evCount} evento(s) asociado(s).`
+    : `¿Eliminar el cliente "${name}"?`;
+  if(!confirm(msg)) return;
+  setStatus('Eliminando…');
+  const { error } = await sb.from('clients').delete().eq('id', id);
+  if(error){ setStatus('Error: ' + error.message, 'err'); return; }
+  await loadData();
+}
 
 async function saveEvent(){
   const btn = document.getElementById('saveBtn');
