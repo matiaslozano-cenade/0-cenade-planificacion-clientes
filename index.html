@@ -581,7 +581,7 @@
   }
 
   /* ── Day detail list ── */
-  .day-modal { width: 540px; }
+  .day-modal { width: 640px; max-width: 96vw; }
   .day-list {
     display: flex; flex-direction: column;
     gap: 8px;
@@ -681,6 +681,108 @@
 
   .gh-day { cursor: pointer; user-select: none; transition: background 0.12s; border-radius: var(--radius-xs); }
   .gh-day:hover { background: var(--bg-elevated-2); }
+
+  /* ── Day timeline ── */
+  .day-tl {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    margin-top: 4px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    overflow: hidden;
+    padding: 10px 12px 10px 0;
+  }
+  .day-tl-hours {
+    display: flex; flex-direction: column;
+  }
+  .day-tl-hour-label {
+    height: 60px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    text-align: right;
+    padding: 0 10px;
+    position: relative;
+    margin-top: -7px;
+    line-height: 14px;
+  }
+  .day-tl-hour-label:first-child { margin-top: 0; }
+  .day-tl-hour-label:last-child  { height: 0; }
+
+  .day-tl-track {
+    position: relative;
+    height: 600px;
+    border-left: 1px solid var(--border-default);
+    background-image: linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
+    background-size: 100% 60px;
+  }
+
+  .day-tl-ev {
+    position: absolute;
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    gap: 1px;
+    line-height: 1.25;
+    transition: filter 0.12s, transform 0.12s;
+    border-left: 3px solid;
+    box-shadow: var(--shadow-sm);
+    z-index: 2;
+  }
+  .day-tl-ev:hover { filter: brightness(1.18); transform: translateY(-1px); z-index: 4; }
+  .day-tl-ev-time {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    opacity: 0.85;
+    font-weight: 500;
+  }
+  .day-tl-ev-desc {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .day-tl-ev-client {
+    font-size: 9.5px;
+    opacity: 0.78;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .day-tl-now {
+    position: absolute;
+    left: 0; right: 0;
+    height: 0;
+    border-top: 1.5px solid var(--accent);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .day-tl-now::before {
+    content: '';
+    position: absolute;
+    left: -4px; top: -4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .day-tl-now::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 8px; top: -16px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--accent);
+    background: var(--bg-base);
+    padding: 0 4px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
 
   /* ── Modal ── */
   .modal-bg {
@@ -1528,6 +1630,10 @@ function exportCSV(){
 // ── Day detail ──
 let currentDayIso = null;
 
+const HOUR_START = 8;
+const HOUR_END   = 18;
+const TL_HEIGHT_PX = (HOUR_END - HOUR_START) * 60;
+
 function openDayDetail(year, month, day){
   const dt = new Date(year, month, day);
   const iso = fmtIsoDate(dt);
@@ -1542,39 +1648,148 @@ function openDayDetail(year, month, day){
     return dt >= s && dt <= e;
   });
 
-  const allDay  = dayEvs.filter(e => !e.startTime);
-  const timed   = dayEvs.filter(e =>  e.startTime).sort((a,b) => a.startTime.localeCompare(b.startTime));
+  const isStartDay = (ev) => parseDate(ev.start).getTime() === dt.getTime();
+
+  const allDay = [];
+  const timed  = [];
+  const outside = [];
+
+  dayEvs.forEach(ev => {
+    const hasTime = ev.startTime && isStartDay(ev);
+    if(!hasTime){ allDay.push(ev); return; }
+
+    const [sh, sm] = ev.startTime.split(':').map(Number);
+    let eh, em;
+    if(ev.endTime){ [eh, em] = ev.endTime.split(':').map(Number); }
+    else { eh = sh + 1; em = sm; }
+    const startMin = sh * 60 + sm;
+    const endMin   = eh * 60 + em;
+
+    const enriched = { ev, startMin, endMin };
+    if(endMin <= HOUR_START * 60 || startMin >= HOUR_END * 60) outside.push(enriched);
+    else timed.push(enriched);
+  });
+
+  // Column assignment for overlapping events
+  const sortedTimed = [...timed].sort((a, b) => a.startMin - b.startMin);
+  const cols = [];
+  sortedTimed.forEach(item => {
+    let placed = false;
+    for(let i=0; i<cols.length; i++){
+      const last = cols[i][cols[i].length-1];
+      if(last.endMin <= item.startMin){
+        cols[i].push(item);
+        item.col = i;
+        placed = true;
+        break;
+      }
+    }
+    if(!placed){
+      cols.push([item]);
+      item.col = cols.length - 1;
+    }
+  });
+  const totalCols = Math.max(1, cols.length);
 
   const listEl = document.getElementById('dayEvList');
   listEl.innerHTML = '';
 
-  if(dayEvs.length === 0){
-    listEl.innerHTML = `
-      <div class="day-list-empty">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-        </svg>
-        <div>Sin eventos este día</div>
-      </div>`;
-  } else {
-    if(allDay.length){
-      const head = document.createElement('div');
-      head.className = 'day-section-head';
-      head.textContent = `Todo el día · ${allDay.length}`;
-      listEl.appendChild(head);
-      allDay.forEach(ev => listEl.appendChild(buildDayEvItem(ev, true)));
+  if(allDay.length){
+    const head = document.createElement('div');
+    head.className = 'day-section-head';
+    head.textContent = `Todo el día · ${allDay.length}`;
+    listEl.appendChild(head);
+    allDay.forEach(ev => listEl.appendChild(buildDayEvItem(ev, true)));
+  }
+
+  // Timeline section (always shown so el usuario ve los slots libres)
+  const tlHead = document.createElement('div');
+  tlHead.className = 'day-section-head';
+  tlHead.textContent = `Horario · ${pad2(HOUR_START)}:00 a ${pad2(HOUR_END)}:00`;
+  listEl.appendChild(tlHead);
+
+  const tl = document.createElement('div');
+  tl.className = 'day-tl';
+
+  const hoursEl = document.createElement('div');
+  hoursEl.className = 'day-tl-hours';
+  for(let h=HOUR_START; h<=HOUR_END; h++){
+    const lbl = document.createElement('div');
+    lbl.className = 'day-tl-hour-label';
+    lbl.textContent = `${pad2(h)}:00`;
+    hoursEl.appendChild(lbl);
+  }
+  tl.appendChild(hoursEl);
+
+  const track = document.createElement('div');
+  track.className = 'day-tl-track';
+  track.style.height = TL_HEIGHT_PX + 'px';
+
+  sortedTimed.forEach(item => {
+    const ev = item.ev;
+    const cfg = TYPE_CFG[ev.type];
+    const baseMin = HOUR_START * 60;
+    const top    = Math.max(0, item.startMin - baseMin);
+    const bottom = Math.min(TL_HEIGHT_PX, item.endMin - baseMin);
+    const height = Math.max(22, bottom - top);
+    const widthPct = 100 / totalCols;
+    const leftPct  = item.col * widthPct;
+
+    const node = document.createElement('div');
+    node.className = 'day-tl-ev';
+    node.style.cssText =
+      `top:${top}px;height:${height}px;` +
+      `left:calc(${leftPct}% + 4px);width:calc(${widthPct}% - 8px);` +
+      `background:${cfg.bg};color:${cfg.color};border-color:${cfg.color};`;
+
+    const client = CLIENTS.find(c => c.id === ev.client);
+    const timeStr = ev.endTime
+      ? `${ev.startTime.slice(0,5)} – ${ev.endTime.slice(0,5)}`
+      : ev.startTime.slice(0,5);
+
+    const showClient = height >= 50;
+    node.innerHTML = `
+      <div class="day-tl-ev-time">${timeStr}</div>
+      <div class="day-tl-ev-desc"></div>
+      ${showClient ? `<div class="day-tl-ev-client"></div>` : ''}`;
+    node.querySelector('.day-tl-ev-desc').textContent = ev.desc;
+    if(showClient) node.querySelector('.day-tl-ev-client').textContent = client ? client.name : '';
+    node.title = `${timeStr} · ${ev.desc}${client ? ' · ' + client.name : ''}\nClick para editar`;
+    node.addEventListener('click', () => {
+      closeDayDetail();
+      openModal(ev);
+    });
+    track.appendChild(node);
+  });
+
+  // "Now" line if today
+  if(year===today.getFullYear() && month===today.getMonth() && day===today.getDate()){
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    if(nowMin >= HOUR_START*60 && nowMin <= HOUR_END*60){
+      const nowEl = document.createElement('div');
+      nowEl.className = 'day-tl-now';
+      nowEl.style.top = (nowMin - HOUR_START*60) + 'px';
+      nowEl.dataset.label = `Ahora ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+      track.appendChild(nowEl);
     }
-    if(timed.length){
-      const head = document.createElement('div');
-      head.className = 'day-section-head';
-      head.textContent = `Programados · ${timed.length}`;
-      listEl.appendChild(head);
-      timed.forEach(ev => listEl.appendChild(buildDayEvItem(ev, false)));
-    }
+  }
+
+  tl.appendChild(track);
+  listEl.appendChild(tl);
+
+  if(outside.length){
+    const head = document.createElement('div');
+    head.className = 'day-section-head';
+    head.textContent = `Fuera de horario · ${outside.length}`;
+    listEl.appendChild(head);
+    outside.forEach(item => listEl.appendChild(buildDayEvItem(item.ev, false)));
   }
 
   document.getElementById('dayDetailBg').classList.add('open');
 }
+
+function pad2(n){ return String(n).padStart(2,'0'); }
 
 function buildDayEvItem(ev, isAllDay){
   const client = CLIENTS.find(c => c.id === ev.client);
