@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Panel de Planificación — Clientes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f1117;
+    --surface:   #1a1d27;
+    --surface2:  #222536;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.13);
+    --text:      #e8eaf0;
+    --text-mute: #7a7f96;
+    --text-dim:  #4a4f66;
+    --accent:    #4f8ef7;
+    --radius:    10px;
+    --radius-sm: 6px;
+    --font:      'DM Sans', sans-serif;
+    --mono:      'DM Mono', monospace;
+
+    --c-meeting:   #4f8ef7;
+    --c-delivery:  #3ecf8e;
+    --c-deadline:  #f5a623;
+    --c-milestone: #e85d75;
+    --c-review:    #a78bfa;
+
+    --c-meeting-bg:   rgba(79,142,247,0.15);
+    --c-delivery-bg:  rgba(62,207,142,0.15);
+    --c-deadline-bg:  rgba(245,166,35,0.15);
+    --c-milestone-bg: rgba(232,93,117,0.15);
+    --c-review-bg:    rgba(167,139,250,0.15);
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo svg { width: 18px; height: 18px; fill: #fff; }
+  .app-title { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  .app-sub { font-size: 12px; color: var(--text-mute); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--border2); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #3a7ae8; border-color: #3a7ae8; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .month-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+  }
+  .month-nav button {
+    background: none; border: none;
+    color: var(--text-mute);
+    width: 30px; height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.12s, background 0.12s;
+  }
+  .month-nav button:hover { color: var(--text); background: var(--surface); }
+  .month-label {
+    font-size: 13px; font-weight: 500;
+    min-width: 130px; text-align: center;
+    letter-spacing: -0.2px;
+  }
+  .sep { width: 1px; height: 20px; background: var(--border2); }
+  .filter-btn {
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-mute);
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: var(--font);
+  }
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+  .filter-btn.active[data-type="meeting"]   { border-color: var(--c-meeting);   color: var(--c-meeting);   background: var(--c-meeting-bg); }
+  .filter-btn.active[data-type="delivery"]  { border-color: var(--c-delivery);  color: var(--c-delivery);  background: var(--c-delivery-bg); }
+  .filter-btn.active[data-type="deadline"]  { border-color: var(--c-deadline);  color: var(--c-deadline);  background: var(--c-deadline-bg); }
+  .filter-btn.active[data-type="milestone"] { border-color: var(--c-milestone); color: var(--c-milestone); background: var(--c-milestone-bg); }
+  .filter-btn.active[data-type="review"]    { border-color: var(--c-review);    color: var(--c-review);    background: var(--c-review-bg); }
+  .spacer { flex: 1; }
+
+  .legend-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .leg { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-mute); }
+  .leg-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .leg-dot.circle { border-radius: 50%; }
+
+  .gantt-outer {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+  }
+  .gantt-inner {
+    min-width: max-content;
+    padding: 20px 28px 40px;
+  }
+  .gantt-grid {
+    display: grid;
+    grid-template-columns: 180px repeat(var(--days), 36px);
+    row-gap: 0;
+  }
+
+  .gh-spacer { }
+  .gh-day {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-align: center;
+    padding: 0 0 8px;
+    position: relative;
+    user-select: none;
+  }
+  .gh-day.today { color: var(--accent); font-weight: 500; }
+  .gh-day.weekend { color: var(--text-dim); opacity: 0.5; }
+  .gh-day .day-num { display: block; font-size: 11px; }
+  .gh-day .day-wd  { display: block; font-size: 9px; opacity: 0.6; margin-top: 1px; }
+
+  .client-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 14px 0 0;
+    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+  }
+  .client-name { font-size: 13px; font-weight: 500; }
+  .client-sub  { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+
+  .day-cell {
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    min-height: 52px;
+  }
+  .day-cell.weekend { background: rgba(255,255,255,0.015); }
+  .day-cell.today-col { background: rgba(79,142,247,0.04); border-left: 1px solid rgba(79,142,247,0.35); }
+
+  .ev-bar {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    left: 4px;
+    height: 24px;
+    border-radius: 5px;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    font-size: 11px; font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    z-index: 2;
+    transition: filter 0.12s, transform 0.12s;
+  }
+  .ev-bar:hover { filter: brightness(1.15); transform: translateY(-50%) scaleY(1.06); }
+
+  .ev-dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2;
+    border: 2px solid var(--bg);
+    transition: transform 0.12s;
+  }
+  .ev-dot:hover { transform: translate(-50%, -50%) scale(1.25); }
+
+  .today-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 1.5px;
+    background: var(--accent);
+    opacity: 0.5;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  #tooltip {
+    position: fixed;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 9999;
+    max-width: 240px;
+    display: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .tt-type { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .tt-desc { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .tt-date { font-size: 11px; color: var(--text-mute); font-family: var(--mono); }
+  .tt-client { font-size: 11px; color: var(--text-mute); margin-top: 3px; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 28px 30px;
+    width: 380px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: modalIn 0.18s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:none; } }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11.5px; color: var(--text-mute); margin-bottom: 5px; letter-spacing: 0.3px; }
+  .form-group input, .form-group select {
+    width: 100%; font-family: var(--font); font-size: 13px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--surface2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  .stats-bar {
+    display: flex;
+    gap: 20px;
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .stat { display: flex; align-items: center; gap: 8px; }
+  .stat-val { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+  .stat-label { font-size: 11px; color: var(--text-mute); line-height: 1.3; }
+
+  .status-pill {
+    font-size: 11px;
+    color: var(--text-mute);
+    font-family: var(--mono);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+  .status-pill.ok    { color: var(--c-delivery); border-color: rgba(62,207,142,0.4); }
+  .status-pill.err   { color: var(--c-milestone); border-color: rgba(232,93,117,0.4); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <svg viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="2" rx="1"/><rect x="2" y="9" width="12" height="2" rx="1"/><rect x="2" y="14" width="14" height="2" rx="1"/></svg>
+    </div>
+    <div>
+      <div class="app-title">Panel de Planificación</div>
+      <div class="app-sub">Gestión de clientes · Carta Gantt</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="statusPill" class="status-pill">Conectando…</span>
+    <button class="btn" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn btn-primary" onclick="openModal()">+ Nuevo evento</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">&#8249;</button>
+    <span class="month-label" id="monthLabel"></span>
+    <button onclick="changeMonth(1)">&#8250;</button>
+  </div>
+  <div class="sep"></div>
+  <button class="filter-btn active" data-type="meeting"   onclick="toggleFilter(this)">Reunión</button>
+  <button class="filter-btn active" data-type="delivery"  onclick="toggleFilter(this)">Entrega</button>
+  <button class="filter-btn active" data-type="deadline"  onclick="toggleFilter(this)">Plazo</button>
+  <button class="filter-btn active" data-type="milestone" onclick="toggleFilter(this)">Hito crítico</button>
+  <button class="filter-btn active" data-type="review"    onclick="toggleFilter(this)">Revisión</button>
+  <div class="spacer"></div>
+  <button class="btn" onclick="goToday()">Hoy</button>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="legend-bar">
+  <div class="leg"><div class="leg-dot" style="background:var(--c-meeting)"></div>Reunión (barra = multi-día)</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--c-delivery)"></div>Entrega</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--c-deadline)"></div>Plazo / Deadline</div>
+  <div class="leg"><div class="leg-dot circle" style="background:var(--c-milestone)"></div>Hito crítico</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--c-review)"></div>Revisión</div>
+  <div class="leg" style="margin-left:auto"><div class="leg-dot" style="background:rgba(79,142,247,0.35);border-radius:1px;width:3px;height:12px"></div>Hoy</div>
+</div>
+
+<div class="gantt-outer" id="ganttOuter">
+  <div class="gantt-inner">
+    <div class="gantt-grid" id="ganttGrid"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Nuevo evento</h2>
+    <div class="form-group">
+      <label>CLIENTE</label>
+      <select id="mClient"></select>
+    </div>
+    <div class="form-group">
+      <label>TIPO DE EVENTO</label>
+      <select id="mType">
+        <option value="meeting">Reunión</option>
+        <option value="delivery">Entrega</option>
+        <option value="deadline">Plazo / Deadline</option>
+        <option value="milestone">Hito crítico</option>
+        <option value="review">Revisión</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>FECHA INICIO</label>
+        <input type="date" id="mStart"/>
+      </div>
+      <div class="form-group">
+        <label>FECHA FIN (opcional)</label>
+        <input type="date" id="mEnd"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>DESCRIPCIÓN</label>
+      <input type="text" id="mDesc" placeholder="Ej: Demo Q3 con stakeholders"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveEvent()">Guardar evento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://wjbwccacjdkuejcriode.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_pcI9qqrsLJuPw1fO4v3qQw_CL7VKxnt';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TYPE_CFG = {
+  meeting:   { label:'Reunión',  color:'#4f8ef7', bg:'rgba(79,142,247,0.22)'  },
+  delivery:  { label:'Entrega',  color:'#3ecf8e', bg:'rgba(62,207,142,0.22)'  },
+  deadline:  { label:'Plazo',    color:'#f5a623', bg:'rgba(245,166,35,0.22)'  },
+  milestone: { label:'Hito',     color:'#e85d75', bg:'rgba(232,93,117,0.22)'  },
+  review:    { label:'Revisión', color:'#a78bfa', bg:'rgba(167,139,250,0.22)' },
+};
+
+let CLIENTS = [];
+let events = [];
+let activeFilters = new Set(['meeting','delivery','deadline','milestone','review']);
+
+const today = new Date(); today.setHours(0,0,0,0);
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth();
+
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const WEEKDAYS = ['D','L','M','M','J','V','S'];
+
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function fmtDate(d){ return d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'}); }
+function getDays(y,m){ return new Date(y,m+1,0).getDate(); }
+function setStatus(text, kind){
+  const p = document.getElementById('statusPill');
+  p.textContent = text;
+  p.className = 'status-pill' + (kind ? ' ' + kind : '');
+}
+
+async function loadData(){
+  setStatus('Cargando…');
+  const [{ data: clientsData, error: cErr }, { data: eventsData, error: eErr }] = await Promise.all([
+    sb.from('clients').select('*').order('id'),
+    sb.from('events').select('*').order('start_date'),
+  ]);
+  if(cErr || eErr){
+    setStatus('Error de conexión', 'err');
+    console.error(cErr || eErr);
+    return;
+  }
+  CLIENTS = clientsData.map(c => ({ id: c.id, name: c.name, sub: c.sub }));
+  events  = eventsData.map(e => ({
+    id: e.id, client: e.client_id, type: e.type,
+    start: e.start_date, end: e.end_date, desc: e.description,
+  }));
+  setStatus(`${CLIENTS.length} clientes · ${events.length} eventos`, 'ok');
+  buildClientSelect();
+  render();
+}
+
+function render(){
+  const days = getDays(currentYear, currentMonth);
+  document.getElementById('monthLabel').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+  document.documentElement.style.setProperty('--days', days);
+
+  const grid = document.getElementById('ganttGrid');
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `180px repeat(${days}, 36px)`;
+
+  const spacer = document.createElement('div');
+  spacer.className = 'gh-spacer';
+  grid.appendChild(spacer);
+
+  for(let d=1; d<=days; d++){
+    const dt = new Date(currentYear, currentMonth, d);
+    const isToday = dt.getTime()===today.getTime();
+    const isWk = dt.getDay()===0||dt.getDay()===6;
+    const el = document.createElement('div');
+    el.className = 'gh-day' + (isToday?' today':'') + (isWk?' weekend':'');
+    el.innerHTML = `<span class="day-num">${d}</span><span class="day-wd">${WEEKDAYS[dt.getDay()]}</span>`;
+    grid.appendChild(el);
+  }
+
+  CLIENTS.forEach(client => {
+    const labelEl = document.createElement('div');
+    labelEl.className = 'client-label';
+    labelEl.innerHTML = `<div class="client-name">${client.name}</div><div class="client-sub">${client.sub||''}</div>`;
+    grid.appendChild(labelEl);
+
+    const clientEvs = events.filter(e=>e.client===client.id && activeFilters.has(e.type));
+
+    for(let d=1; d<=days; d++){
+      const dt = new Date(currentYear, currentMonth, d);
+      const isToday = dt.getTime()===today.getTime();
+      const isWk = dt.getDay()===0||dt.getDay()===6;
+      const cell = document.createElement('div');
+      cell.className = 'day-cell' + (isWk?' weekend':'') + (isToday?' today-col':'');
+
+      if(isToday){
+        const line = document.createElement('div');
+        line.className = 'today-line';
+        cell.appendChild(line);
+      }
+
+      clientEvs.forEach(ev => {
+        const start = parseDate(ev.start);
+        const end = ev.end ? parseDate(ev.end) : null;
+        const cfg = TYPE_CFG[ev.type];
+
+        if(end){
+          if(dt.getTime()===start.getTime()){
+            const span = Math.round((end-start)/(86400000))+1;
+            const bar = document.createElement('div');
+            bar.className = 'ev-bar';
+            bar.style.cssText = `background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.color}40;width:calc(${span*36}px - 8px);`;
+            bar.textContent = ev.desc;
+            bar.title = ev.desc;
+            attachTooltip(bar, ev, client.name);
+            cell.appendChild(bar);
+          }
+        } else {
+          if(dt.getTime()===start.getTime()){
+            const dot = document.createElement('div');
+            dot.className = 'ev-dot';
+            dot.style.cssText = `background:${cfg.color};border-color:var(--bg);`;
+            attachTooltip(dot, ev, client.name);
+            cell.appendChild(dot);
+          }
+        }
+      });
+      grid.appendChild(cell);
+    }
+  });
+
+  renderStats();
+}
+
+function attachTooltip(el, ev, clientName){
+  const cfg = TYPE_CFG[ev.type];
+  el.addEventListener('mouseenter', e=>{
+    const tip = document.getElementById('tooltip');
+    let dateStr = fmtDate(parseDate(ev.start));
+    if(ev.end) dateStr += ' → ' + fmtDate(parseDate(ev.end));
+    tip.innerHTML = `
+      <div class="tt-type" style="color:${cfg.color}">${cfg.label}</div>
+      <div class="tt-desc">${ev.desc}</div>
+      <div class="tt-date">${dateStr}</div>
+      <div class="tt-client">${clientName}</div>`;
+    tip.style.display='block';
+    moveTip(e);
+  });
+  el.addEventListener('mousemove', moveTip);
+  el.addEventListener('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; });
+}
+
+function moveTip(e){
+  const tip = document.getElementById('tooltip');
+  let x = e.clientX+14, y = e.clientY-10;
+  if(x+240>window.innerWidth) x = e.clientX-250;
+  if(y+100>window.innerHeight) y = e.clientY-80;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+
+function renderStats(){
+  const bar = document.getElementById('statsBar');
+  const month = currentMonth, year = currentYear;
+  const monthEvs = events.filter(e=>{
+    const d = parseDate(e.start);
+    return d.getFullYear()===year && d.getMonth()===month;
+  });
+  const counts = {};
+  Object.keys(TYPE_CFG).forEach(k=>counts[k]=0);
+  monthEvs.forEach(e=>counts[e.type]++);
+  bar.innerHTML = `
+    <div class="stat"><span class="stat-val" style="color:var(--accent)">${monthEvs.length}</span><span class="stat-label">Total<br>este mes</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--c-meeting)">${counts.meeting}</span><span class="stat-label">Reuniones</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--c-delivery)">${counts.delivery}</span><span class="stat-label">Entregas</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--c-deadline)">${counts.deadline}</span><span class="stat-label">Plazos</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--c-milestone)">${counts.milestone}</span><span class="stat-label">Hitos</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--c-review)">${counts.review}</span><span class="stat-label">Revisiones</span></div>`;
+}
+
+function changeMonth(dir){
+  currentMonth += dir;
+  if(currentMonth<0){ currentMonth=11; currentYear--; }
+  if(currentMonth>11){ currentMonth=0; currentYear++; }
+  render();
+}
+
+function goToday(){
+  currentYear=today.getFullYear(); currentMonth=today.getMonth();
+  render();
+  setTimeout(()=>{
+    const outer=document.getElementById('ganttOuter');
+    const dayW=36, labelW=180, pad=28;
+    const dayOfMonth=today.getDate();
+    outer.scrollLeft = pad+labelW+(dayOfMonth-4)*dayW;
+  },50);
+}
+
+function toggleFilter(btn){
+  const t=btn.dataset.type;
+  if(activeFilters.has(t)){ activeFilters.delete(t); btn.classList.remove('active'); }
+  else { activeFilters.add(t); btn.classList.add('active'); }
+  render();
+}
+
+function openModal(){
+  if(!CLIENTS.length){ alert('Aún no hay clientes cargados'); return; }
+  const y=currentYear, m=String(currentMonth+1).padStart(2,'0');
+  document.getElementById('mStart').value=`${y}-${m}-01`;
+  document.getElementById('mEnd').value='';
+  document.getElementById('mDesc').value='';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+
+document.getElementById('modalBg').addEventListener('click',function(e){
+  if(e.target===this) closeModal();
+});
+
+async function saveEvent(){
+  const btn = document.getElementById('saveBtn');
+  const client_id=parseInt(document.getElementById('mClient').value);
+  const type=document.getElementById('mType').value;
+  const start=document.getElementById('mStart').value;
+  const end=document.getElementById('mEnd').value||null;
+  const desc=document.getElementById('mDesc').value.trim()||TYPE_CFG[type].label;
+  if(!start){ alert('Selecciona fecha de inicio'); return; }
+
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const { error } = await sb.from('events').insert({
+    client_id, type, start_date: start, end_date: end, description: desc,
+  });
+  btn.disabled = false; btn.textContent = 'Guardar evento';
+  if(error){ alert('Error: ' + error.message); return; }
+  closeModal();
+  await loadData();
+}
+
+function exportCSV(){
+  const rows=[['Cliente','Tipo','Descripción','Inicio','Fin']];
+  events.forEach(ev=>{
+    const c=CLIENTS.find(x=>x.id===ev.client);
+    rows.push([c ? c.name : '', TYPE_CFG[ev.type].label, ev.desc, ev.start, ev.end||ev.start]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='planificacion-clientes.csv';
+  a.click();
+}
+
+function buildClientSelect(){
+  const sel=document.getElementById('mClient');
+  sel.innerHTML='';
+  CLIENTS.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id; o.textContent=c.name;
+    sel.appendChild(o);
+  });
+}
+
+loadData().then(()=>{
+  setTimeout(()=>{
+    if(currentYear===today.getFullYear()&&currentMonth===today.getMonth()){
+      const outer=document.getElementById('ganttOuter');
+      const dayW=36, labelW=180, pad=28;
+      outer.scrollLeft = pad+labelW+(today.getDate()-4)*dayW;
+    }
+  },100);
+});
+</script>
+</body>
+</html>
