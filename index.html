@@ -893,6 +893,56 @@
   }
   .form-group select option { background: var(--bg-input); }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Color picker ── */
+  .color-pick {
+    display: flex; flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .color-swatch {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.12s, box-shadow 0.12s;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.10);
+  }
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.active {
+    border-color: var(--bg-elevated);
+    box-shadow: 0 0 0 2px var(--text-primary), 0 1px 4px rgba(15,23,42,0.18);
+  }
+  .color-pick input[type="color"] {
+    width: 28px; height: 28px;
+    border: 1px dashed var(--border-default);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 8px;
+  }
+  .color-pick input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-pick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .color-auto {
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-elevated-2);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    margin-left: auto;
+    transition: all 0.12s;
+  }
+  .color-auto:hover { color: var(--text-primary); border-color: var(--border-strong); }
+  .color-auto.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
   .modal-actions {
     display: flex; gap: 8px; justify-content: flex-end;
     margin-top: 20px;
@@ -1009,6 +1059,21 @@
         <label>Rubro / Descripción</label>
         <input type="text" id="cSub" placeholder="Opcional · ej: E-commerce"/>
       </div>
+      <div class="form-group">
+        <label>Color del avatar</label>
+        <div class="color-pick" id="cColorPick">
+          <button type="button" class="color-swatch" data-color="#1e3a8a" style="background:#1e3a8a" title="Navy"></button>
+          <button type="button" class="color-swatch" data-color="#c8332d" style="background:#c8332d" title="Rojo CENADE"></button>
+          <button type="button" class="color-swatch" data-color="#047857" style="background:#047857" title="Emerald"></button>
+          <button type="button" class="color-swatch" data-color="#b45309" style="background:#b45309" title="Ámbar"></button>
+          <button type="button" class="color-swatch" data-color="#5b21b6" style="background:#5b21b6" title="Índigo"></button>
+          <button type="button" class="color-swatch" data-color="#0e7490" style="background:#0e7490" title="Cyan"></button>
+          <button type="button" class="color-swatch" data-color="#7c2d12" style="background:#7c2d12" title="Rust"></button>
+          <button type="button" class="color-swatch" data-color="#a21caf" style="background:#a21caf" title="Magenta"></button>
+          <input type="color" id="cColorCustom" title="Color personalizado"/>
+          <button type="button" class="color-auto" id="cColorAuto" title="Color automático según el nombre">Auto</button>
+        </div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeClientModal()">Cancelar</button>
@@ -1105,6 +1170,7 @@ let events = [];
 let activeFilters = new Set(TYPES);
 let editingClientId = null;
 let editingEventId  = null;
+let pendingClientColor = null;  // hex string or null (= auto by name)
 
 const today = new Date(); today.setHours(0,0,0,0);
 let currentYear = today.getFullYear();
@@ -1121,6 +1187,10 @@ function clientColor(name){
   let h = 0;
   for(let i=0;i<name.length;i++) h = name.charCodeAt(i) + ((h<<5) - h);
   return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+}
+function getClientColor(client){
+  if(!client) return 'var(--accent)';
+  return client.color || clientColor(client.name || '');
 }
 function clientInitials(name){
   return name.trim().split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
@@ -1143,7 +1213,7 @@ async function loadData(){
     console.error(cErr || eErr);
     return;
   }
-  CLIENTS = clientsData.map(c => ({ id: c.id, name: c.name, sub: c.sub }));
+  CLIENTS = clientsData.map(c => ({ id: c.id, name: c.name, sub: c.sub, color: c.color }));
   events  = eventsData.map(e => ({
     id: e.id, client: e.client_id, type: e.type,
     start: e.start_date, end: e.end_date,
@@ -1227,7 +1297,7 @@ function render(){
 
   // Client rows
   CLIENTS.forEach(client => {
-    const color = clientColor(client.name);
+    const color = getClientColor(client);
 
     const labelEl = document.createElement('div');
     labelEl.className = 'client-label';
@@ -1516,9 +1586,35 @@ function openClientModal(client){
   document.getElementById('saveClientBtn').textContent   = client ? 'Guardar cambios' : 'Crear cliente';
   document.getElementById('cName').value = client ? client.name : '';
   document.getElementById('cSub').value  = client ? (client.sub || '') : '';
+
+  const initialColor = client && client.color ? client.color : null;
+  setPendingClientColor(initialColor);
+  document.getElementById('cColorCustom').value = initialColor || (client ? clientColor(client.name) : '#1e3a8a');
+
   document.getElementById('clientModalBg').classList.add('open');
   setTimeout(() => document.getElementById('cName').focus(), 60);
 }
+
+function setPendingClientColor(color){
+  pendingClientColor = color;
+  document.querySelectorAll('#cColorPick .color-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color.toLowerCase() === (color||'').toLowerCase());
+  });
+  document.getElementById('cColorAuto').classList.toggle('active', !color);
+}
+
+document.getElementById('cColorPick').addEventListener('click', e => {
+  const sw = e.target.closest('.color-swatch');
+  if(!sw) return;
+  setPendingClientColor(sw.dataset.color);
+  document.getElementById('cColorCustom').value = sw.dataset.color;
+});
+document.getElementById('cColorCustom').addEventListener('input', e => {
+  setPendingClientColor(e.target.value);
+});
+document.getElementById('cColorAuto').addEventListener('click', () => {
+  setPendingClientColor(null);
+});
 function closeClientModal(){
   document.getElementById('clientModalBg').classList.remove('open');
   editingClientId = null;
@@ -1537,9 +1633,10 @@ async function saveClient(){
   btn.disabled = true;
   const original = btn.textContent;
   btn.textContent = 'Guardando…';
+  const payload = { name, sub, color: pendingClientColor };
   const q = editingClientId
-    ? sb.from('0-cenade-planificacion-clientes').update({ name, sub }).eq('id', editingClientId)
-    : sb.from('0-cenade-planificacion-clientes').insert({ name, sub });
+    ? sb.from('0-cenade-planificacion-clientes').update(payload).eq('id', editingClientId)
+    : sb.from('0-cenade-planificacion-clientes').insert(payload);
   const { error } = await q;
   btn.disabled = false; btn.textContent = original;
   if(error){ alert('Error: ' + error.message); return; }
@@ -1850,7 +1947,7 @@ function buildDayEvItem(ev, isAllDay){
     <div class="day-ev-body">
       <span class="day-ev-pill" style="background:${cfg.bg};color:${cfg.color}">${cfg.short}</span>
       <div class="day-ev-desc"></div>
-      <div class="day-ev-client" style="--client-color:${client ? clientColor(client.name) : 'var(--accent)'}"></div>
+      <div class="day-ev-client" style="--client-color:${getClientColor(client)}"></div>
     </div>`;
   item.querySelector('.day-ev-desc').textContent = ev.desc;
   item.querySelector('.day-ev-client').textContent = client ? client.name : '—';

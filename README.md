@@ -35,7 +35,7 @@ En pantallas <900 px la sidebar se oculta automáticamente.
 Las tablas usan el prefijo organizacional `0-cenade-planificacion-`:
 
 ```sql
-"0-cenade-planificacion-clientes" (id, name, sub, created_at)
+"0-cenade-planificacion-clientes" (id, name, sub, color, created_at)
 "0-cenade-planificacion-eventos"  (id, client_id → clientes, type,
                                    start_date, end_date,
                                    start_time, end_time,
@@ -97,7 +97,7 @@ vercel --prod
 - Filtros por tipo de evento desde la sidebar
 - Stats del mes en sidebar (cards con conteo por tipo + total destacado)
 - Eventos single-day (puntos) y multi-día (barras)
-- Modal "Nuevo cliente" / "Editar cliente" (nombre + rubro)
+- Modal "Nuevo cliente" / "Editar cliente" (nombre, rubro y color de avatar — 8 colores preset, picker custom o "Auto" para color por hash del nombre)
 - Doble-click sobre fila de cliente para editar
 - Eliminar cliente con botón × en hover (borra eventos en cascada)
 - Modal "Nuevo evento" con hora opcional (inicio / fin) y recurrencia (diaria, semanal, quincenal, mensual) hasta una fecha tope
