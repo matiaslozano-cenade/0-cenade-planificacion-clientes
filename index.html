@@ -610,6 +610,167 @@
     font-family: var(--font-mono);
   }
 
+  /* ── Pendientes ── */
+  .pend-modal { width: 720px; max-width: 96vw; }
+  .pend-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+  }
+  .pend-toolbar input[type="text"] {
+    flex: 1;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+  }
+  .pend-toolbar input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+  }
+  .pend-toolbar select {
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+    min-width: 140px;
+  }
+
+  .pend-groups { display: flex; flex-direction: column; gap: 14px; }
+  .pend-group {
+    display: flex; flex-direction: column;
+    gap: 6px;
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .pend-group-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .pend-group-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--client-color, var(--accent));
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .pend-group-name {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pend-group-count {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+
+  .pend-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    transition: all 0.12s;
+  }
+  .pend-item:hover { border-color: var(--border-default); }
+  .pend-item.done .pend-text {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+  .pend-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.12s;
+    background: transparent;
+    color: transparent;
+  }
+  .pend-check:hover { border-color: var(--accent); }
+  .pend-item.done .pend-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .pend-text {
+    font-size: 13px;
+    color: var(--text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pend-prio {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .pend-prio.low    { background: rgba(100,116,139,0.12); color: #475569; }
+  .pend-prio.normal { background: var(--accent-soft);     color: var(--accent); }
+  .pend-prio.high   { background: rgba(200,51,45,0.12);   color: var(--c-milestone); }
+  .pend-action {
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    width: 26px; height: 26px;
+    border-radius: var(--radius-xs);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .pend-action:hover { background: var(--bg-elevated-2); color: var(--text-primary); }
+  .pend-action.danger:hover { background: rgba(248,113,113,0.15); color: var(--c-milestone); }
+  .pend-action svg { width: 14px; height: 14px; }
+
+  .pend-empty {
+    padding: 36px 16px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+
+  .client-pend-badge {
+    margin-left: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+
   /* ── Day detail list ── */
   .day-modal { width: 640px; max-width: 96vw; }
   .day-list {
@@ -985,6 +1146,7 @@
   <div class="topbar-right">
     <span id="statusPill" class="status-pill">Conectando…</span>
     <button class="btn btn-ghost" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn btn-ghost" onclick="openPendientes()">Pendientes <span id="pendCountBadge" class="client-pend-badge" style="display:none;margin-left:4px"></span></button>
     <button class="btn" onclick="openClientModal()">+ Cliente</button>
     <button class="btn btn-primary" onclick="openModal()">+ Nuevo evento</button>
   </div>
@@ -1027,6 +1189,31 @@
 </main>
 
 <div id="tooltip"></div>
+
+<div class="modal-bg" id="pendientesBg">
+  <div class="modal pend-modal">
+    <div class="modal-head">
+      <h2>Pendientes por cliente</h2>
+      <span class="modal-tag">Sin fecha</span>
+    </div>
+    <div class="modal-body">
+      <div class="pend-toolbar">
+        <select id="pendNewClient" title="Cliente"></select>
+        <input type="text" id="pendNewDesc" placeholder="Anotar pendiente… (Enter para agregar)"/>
+        <select id="pendNewPrio" title="Prioridad">
+          <option value="low">Baja</option>
+          <option value="normal" selected>Normal</option>
+          <option value="high">Alta</option>
+        </select>
+        <button class="btn btn-primary" onclick="addPendiente()">Agregar</button>
+      </div>
+      <div class="pend-groups" id="pendGroups"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closePendientes()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-bg" id="dayDetailBg">
   <div class="modal day-modal">
@@ -1167,6 +1354,7 @@ const AVATAR_PALETTE = ['#1e3a8a','#047857','#b45309','#c8332d','#5b21b6','#0e74
 
 let CLIENTS = [];
 let events = [];
+let pendientes = [];
 let activeFilters = new Set(TYPES);
 let editingClientId = null;
 let editingEventId  = null;
@@ -1204,13 +1392,14 @@ function setStatus(text, kind){
 
 async function loadData(){
   setStatus('Cargando…');
-  const [{ data: clientsData, error: cErr }, { data: eventsData, error: eErr }] = await Promise.all([
+  const [{ data: clientsData, error: cErr }, { data: eventsData, error: eErr }, { data: pendData, error: pErr }] = await Promise.all([
     sb.from('0-cenade-planificacion-clientes').select('*').order('id'),
     sb.from('0-cenade-planificacion-eventos').select('*').order('start_date'),
+    sb.from('0-cenade-planificacion-pendientes').select('*').order('created_at'),
   ]);
-  if(cErr || eErr){
+  if(cErr || eErr || pErr){
     setStatus('Error de conexión', 'err');
-    console.error(cErr || eErr);
+    console.error(cErr || eErr || pErr);
     return;
   }
   CLIENTS = clientsData.map(c => ({ id: c.id, name: c.name, sub: c.sub, color: c.color }));
@@ -1221,10 +1410,16 @@ async function loadData(){
     recurrenceId: e.recurrence_group_id,
     desc: e.description,
   }));
-  setStatus(`${CLIENTS.length} clientes · ${events.length} eventos`, 'ok');
+  pendientes = (pendData || []).map(p => ({
+    id: p.id, client: p.client_id, desc: p.description,
+    priority: p.priority || 'normal', done: !!p.done, createdAt: p.created_at,
+  }));
+  setStatus(`${CLIENTS.length} clientes · ${events.length} eventos · ${pendientes.filter(p=>!p.done).length} pendientes`, 'ok');
   buildClientSelect();
   renderFilterList();
+  renderPendCountBadge();
   render();
+  if(document.getElementById('pendientesBg').classList.contains('open')) renderPendientes();
 }
 
 function renderFilterList(){
@@ -1312,7 +1507,17 @@ function render(){
       </div>
       <button class="client-del" title="Eliminar cliente">×</button>`;
     labelEl.querySelector('.client-avatar').textContent = clientInitials(client.name);
-    labelEl.querySelector('.client-name').textContent   = client.name;
+    const nameEl = labelEl.querySelector('.client-name');
+    nameEl.textContent = client.name;
+    const pendCount = pendientes.filter(p => p.client === client.id && !p.done).length;
+    if(pendCount > 0){
+      const badge = document.createElement('span');
+      badge.className = 'client-pend-badge';
+      badge.textContent = pendCount;
+      badge.title = `${pendCount} pendiente(s) sin fecha · click para ver`;
+      badge.addEventListener('click', e => { e.stopPropagation(); openPendientes(client.id); });
+      nameEl.appendChild(badge);
+    }
     labelEl.querySelector('.client-sub').textContent    = client.sub || '—';
     const delBtn = labelEl.querySelector('.client-del');
     delBtn.addEventListener('click', e => { e.stopPropagation(); deleteClient(client.id, client.name); });
@@ -1537,7 +1742,9 @@ function openModal(ev, defaultStart){
   const isEdit = !!ev;
 
   document.getElementById('eTitle').textContent     = isEdit ? 'Editar evento' : 'Nuevo evento';
-  document.getElementById('saveBtn').textContent    = isEdit ? 'Guardar cambios' : 'Crear evento';
+  const saveBtnEl = document.getElementById('saveBtn');
+  saveBtnEl.textContent = isEdit ? 'Guardar cambios' : 'Crear evento';
+  delete saveBtnEl.dataset.fromPendienteId;
 
   // Hide recurrence section in edit mode (no aplica modificar serie desde aquí)
   const recGroup   = document.getElementById('mRecurrence').closest('.form-group');
@@ -1739,6 +1946,12 @@ async function saveEvent(){
     const { error } = await sb.from('0-cenade-planificacion-eventos').insert(rows);
     btn.disabled = false; btn.textContent = originalLabel;
     if(error){ alert('Error: ' + error.message); return; }
+
+    const fromPend = btn.dataset.fromPendienteId;
+    if(fromPend){
+      await sb.from('0-cenade-planificacion-pendientes').delete().eq('id', parseInt(fromPend));
+      delete btn.dataset.fromPendienteId;
+    }
   }
   closeModal();
   await loadData();
@@ -1983,14 +2196,218 @@ function buildClientSelect(){
   });
 }
 
+// ── Pendientes ──
+const PRIO_LABEL = { low: 'Baja', normal: 'Normal', high: 'Alta' };
+const PRIO_RANK  = { high: 0, normal: 1, low: 2 };
+let pendFocusClientId = null;
+
+function renderPendCountBadge(){
+  const badge = document.getElementById('pendCountBadge');
+  const n = pendientes.filter(p => !p.done).length;
+  if(n > 0){ badge.textContent = n; badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+
+function openPendientes(focusClientId){
+  if(!CLIENTS.length){
+    if(confirm('Aún no hay clientes. ¿Crear uno ahora?')) openClientModal();
+    return;
+  }
+  pendFocusClientId = focusClientId || null;
+
+  const sel = document.getElementById('pendNewClient');
+  sel.innerHTML = '';
+  CLIENTS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+  if(focusClientId) sel.value = focusClientId;
+
+  document.getElementById('pendNewDesc').value = '';
+  document.getElementById('pendNewPrio').value = 'normal';
+
+  renderPendientes();
+  document.getElementById('pendientesBg').classList.add('open');
+  setTimeout(() => document.getElementById('pendNewDesc').focus(), 60);
+}
+
+function closePendientes(){
+  document.getElementById('pendientesBg').classList.remove('open');
+  pendFocusClientId = null;
+}
+
+function renderPendientes(){
+  const wrap = document.getElementById('pendGroups');
+  wrap.innerHTML = '';
+
+  const clientsToShow = pendFocusClientId
+    ? CLIENTS.filter(c => c.id === pendFocusClientId)
+    : CLIENTS;
+
+  let totalShown = 0;
+  clientsToShow.forEach(client => {
+    const items = pendientes
+      .filter(p => p.client === client.id)
+      .sort((a, b) => {
+        if(a.done !== b.done) return a.done ? 1 : -1;
+        const pr = PRIO_RANK[a.priority] - PRIO_RANK[b.priority];
+        if(pr !== 0) return pr;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      });
+    if(!items.length) return;
+    totalShown += items.length;
+
+    const color = getClientColor(client);
+    const group = document.createElement('div');
+    group.className = 'pend-group';
+    group.style.setProperty('--client-color', color);
+
+    const head = document.createElement('div');
+    head.className = 'pend-group-head';
+    const openCount = items.filter(p => !p.done).length;
+    head.innerHTML = `
+      <div class="pend-group-avatar"></div>
+      <div class="pend-group-name"></div>
+      <div class="pend-group-count">${openCount} abiertos · ${items.length} total</div>`;
+    head.querySelector('.pend-group-avatar').textContent = clientInitials(client.name);
+    head.querySelector('.pend-group-name').textContent = client.name;
+    group.appendChild(head);
+
+    items.forEach(p => group.appendChild(buildPendItem(p, client)));
+    wrap.appendChild(group);
+  });
+
+  if(!totalShown){
+    const empty = document.createElement('div');
+    empty.className = 'pend-empty';
+    empty.textContent = pendFocusClientId
+      ? 'Este cliente no tiene pendientes. Anota uno arriba.'
+      : 'Sin pendientes registrados. Anota el primero arriba.';
+    wrap.appendChild(empty);
+  }
+}
+
+function buildPendItem(p, client){
+  const row = document.createElement('div');
+  row.className = 'pend-item' + (p.done ? ' done' : '');
+
+  const check = document.createElement('button');
+  check.className = 'pend-check';
+  check.title = p.done ? 'Marcar como pendiente' : 'Marcar como hecho';
+  check.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 8.5 6.5 12 13 5"/></svg>`;
+  check.addEventListener('click', () => togglePendiente(p));
+
+  const text = document.createElement('div');
+  text.className = 'pend-text';
+  text.textContent = p.desc;
+  text.title = 'Doble-click para editar texto';
+  text.addEventListener('dblclick', () => editPendienteText(p));
+
+  const prio = document.createElement('span');
+  prio.className = 'pend-prio ' + p.priority;
+  prio.textContent = PRIO_LABEL[p.priority] || p.priority;
+  prio.title = 'Click para cambiar prioridad';
+  prio.style.cursor = 'pointer';
+  prio.addEventListener('click', () => cyclePendientePrio(p));
+
+  const sched = document.createElement('button');
+  sched.className = 'pend-action';
+  sched.title = 'Programar como evento (asignar fecha)';
+  sched.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>`;
+  sched.addEventListener('click', () => schedulePendiente(p, client));
+
+  const del = document.createElement('button');
+  del.className = 'pend-action danger';
+  del.title = 'Eliminar pendiente';
+  del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
+  del.addEventListener('click', () => deletePendiente(p));
+
+  row.appendChild(check);
+  row.appendChild(text);
+  row.appendChild(prio);
+  row.appendChild(sched);
+  row.appendChild(del);
+  return row;
+}
+
+async function addPendiente(){
+  const client_id = parseInt(document.getElementById('pendNewClient').value);
+  const desc = document.getElementById('pendNewDesc').value.trim();
+  const priority = document.getElementById('pendNewPrio').value;
+  if(!client_id){ alert('Selecciona un cliente'); return; }
+  if(!desc){ document.getElementById('pendNewDesc').focus(); return; }
+
+  const { error } = await sb.from('0-cenade-planificacion-pendientes').insert({
+    client_id, description: desc, priority,
+  });
+  if(error){ alert('Error: ' + error.message); return; }
+
+  document.getElementById('pendNewDesc').value = '';
+  await loadData();
+}
+
+async function togglePendiente(p){
+  const { error } = await sb.from('0-cenade-planificacion-pendientes')
+    .update({ done: !p.done }).eq('id', p.id);
+  if(error){ alert('Error: ' + error.message); return; }
+  await loadData();
+}
+
+async function deletePendiente(p){
+  if(!confirm(`¿Eliminar pendiente "${p.desc}"?`)) return;
+  const { error } = await sb.from('0-cenade-planificacion-pendientes').delete().eq('id', p.id);
+  if(error){ alert('Error: ' + error.message); return; }
+  await loadData();
+}
+
+async function editPendienteText(p){
+  const v = prompt('Editar pendiente:', p.desc);
+  if(v === null) return;
+  const desc = v.trim();
+  if(!desc) return;
+  if(desc === p.desc) return;
+  const { error } = await sb.from('0-cenade-planificacion-pendientes')
+    .update({ description: desc }).eq('id', p.id);
+  if(error){ alert('Error: ' + error.message); return; }
+  await loadData();
+}
+
+async function cyclePendientePrio(p){
+  const order = ['low','normal','high'];
+  const next = order[(order.indexOf(p.priority) + 1) % order.length];
+  const { error } = await sb.from('0-cenade-planificacion-pendientes')
+    .update({ priority: next }).eq('id', p.id);
+  if(error){ alert('Error: ' + error.message); return; }
+  await loadData();
+}
+
+function schedulePendiente(p, client){
+  closePendientes();
+  openModal(null);
+  document.getElementById('mClient').value = String(client.id);
+  document.getElementById('mDesc').value = p.desc;
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.textContent = 'Crear evento y archivar pendiente';
+  saveBtn.dataset.fromPendienteId = String(p.id);
+}
+
 // Keyboard shortcuts
+document.getElementById('pendientesBg').addEventListener('click', function(e){
+  if(e.target===this) closePendientes();
+});
+document.getElementById('pendNewDesc').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); addPendiente(); }
+});
+
 document.addEventListener('keydown', e => {
   if(e.target.matches('input, select, textarea')) return;
-  if(e.key === 'Escape'){ closeModal(); closeClientModal(); closeDayDetail(); }
+  if(e.key === 'Escape'){ closeModal(); closeClientModal(); closeDayDetail(); closePendientes(); }
   if(e.key === 'ArrowLeft'  && (e.metaKey||e.ctrlKey)){ e.preventDefault(); changeMonth(-1); }
   if(e.key === 'ArrowRight' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); changeMonth(1); }
   if(e.key === 't' || e.key === 'T') goToday();
   if(e.key === 'n' || e.key === 'N') openModal();
+  if(e.key === 'p' || e.key === 'P') openPendientes();
 });
 
 loadData().then(()=>{

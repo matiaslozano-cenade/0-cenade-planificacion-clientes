@@ -35,15 +35,20 @@ En pantallas <900 px la sidebar se oculta automáticamente.
 Las tablas usan el prefijo organizacional `0-cenade-planificacion-`:
 
 ```sql
-"0-cenade-planificacion-clientes" (id, name, sub, color, created_at)
-"0-cenade-planificacion-eventos"  (id, client_id → clientes, type,
-                                   start_date, end_date,
-                                   start_time, end_time,
-                                   recurrence_group_id,
-                                   description, created_at)
+"0-cenade-planificacion-clientes"   (id, name, sub, color, created_at)
+"0-cenade-planificacion-eventos"    (id, client_id → clientes, type,
+                                     start_date, end_date,
+                                     start_time, end_time,
+                                     recurrence_group_id,
+                                     description, created_at)
+"0-cenade-planificacion-pendientes" (id, client_id → clientes,
+                                     description, priority, done,
+                                     created_at)
 ```
 
 `events.type` está restringido a: `meeting`, `delivery`, `deadline`, `milestone`, `review`.
+
+`pendientes.priority` está restringido a: `low`, `normal`, `high`. Es la "bandeja de entrada" sin fecha — cuando un pendiente se programa, la app crea el evento correspondiente y elimina la fila de pendientes.
 
 `recurrence_group_id` (uuid, nullable) agrupa eventos creados a partir de una misma regla de repetición — los eventos individuales se generan al guardar y comparten ese id, lo que permite eliminar toda la serie con un solo `DELETE`.
 
@@ -109,6 +114,7 @@ vercel --prod
 - Encabezados de día y columna de cliente sticky
 - Empty state cuando no hay clientes
 - Exportar todo el dataset a CSV
+- **Pendientes por cliente** — botón "Pendientes" en topbar abre un panel con la "bandeja de entrada" sin fecha agrupada por cliente. Cada pendiente tiene prioridad (Baja / Normal / Alta) y acciones: marcar hecho, editar texto (doble-click), reciclar prioridad (click en pill), **programar como evento** (icono calendario — abre el modal de evento con la descripción precargada y al guardar borra el pendiente) o eliminar. Cada cliente muestra un badge con el conteo de pendientes abiertos en su fila del Gantt; click sobre el badge abre el panel filtrado por ese cliente
 
 ## Atajos de teclado
 
@@ -116,5 +122,6 @@ vercel --prod
 |---|---|
 | `T` | Saltar al mes actual |
 | `N` | Crear evento |
+| `P` | Abrir panel de pendientes |
 | `⌘/Ctrl + ←` / `→` | Mes anterior / siguiente |
 | `Esc` | Cerrar modal |
