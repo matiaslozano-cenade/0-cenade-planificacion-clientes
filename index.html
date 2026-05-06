@@ -611,9 +611,15 @@
   }
 
   /* ── Pendientes ── */
-  .pend-modal { width: 1240px; max-width: 96vw; }
+  .pend-modal {
+    width: min(1100px, 95vw);
+    min-height: 70vh;
+    overflow-x: hidden;
+  }
+  .pend-modal .modal-body { overflow-x: hidden; }
   .pend-toolbar {
     display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
     padding: 10px 14px;
     background: var(--bg-elevated-2);
     border: 1px solid var(--border-subtle);
@@ -621,7 +627,8 @@
     margin-bottom: 12px;
   }
   .pend-toolbar input[type="text"] {
-    flex: 1;
+    flex: 1 1 220px;
+    min-width: 0;
     font-family: var(--font-sans);
     font-size: 13px;
     padding: 8px 10px;
@@ -644,7 +651,7 @@
     background: var(--bg-input);
     color: var(--text-primary);
     outline: none;
-    min-width: 140px;
+    max-width: 220px;
   }
 
   .pend-groups { display: flex; flex-direction: column; gap: 14px; }
@@ -723,9 +730,9 @@
     font-size: 13px;
     color: var(--text-primary);
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.35;
   }
   .pend-prio {
     font-size: 9.5px;
